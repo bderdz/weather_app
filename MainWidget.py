@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QLineEdit, QPushButton, QLabel, QGridLayout
+from PySide6.QtWidgets import QWidget, QLineEdit, QPushButton, QLabel, QGridLayout, QMessageBox, QListWidget
 import requests
 
 class MainWidget(QWidget):
@@ -9,12 +9,14 @@ class MainWidget(QWidget):
         self.city_edit = QLineEdit("Lublin", self)
         get_cities_btn = QPushButton("Get Cities", self)
         self.weather_label = QLabel(self)
+        self.city_list = QListWidget(self)
         get_cities_btn.clicked.connect(self.get_cities)
 
         layout = QGridLayout(self)
         layout.addWidget(self.city_edit, 0, 0)
         layout.addWidget(get_cities_btn, 0, 1)
-        layout.addWidget(self.weather_label, 1, 0, 1, 2)
+        layout.addWidget(self.city_list, 1, 0, 1, 2)
+        layout.addWidget(self.weather_label, 2, 0, 1, 2)
 
     def get_cities(self):
         # self.weather_label.setText(self.city_edit.text())
@@ -23,11 +25,15 @@ class MainWidget(QWidget):
         json = response.json()
 
         if "results" not in json.keys():
-            print("No such city")
+            #print("No such city")
+            QMessageBox.critical(self, "Error", "No such city")
             return
 
         results = json["results"]
-        city = results[0]
-        latitude = city["latitude"]
-        longitude = city["longitude"]
-        print(latitude, longitude)
+        for city in results:
+            latitude = city["latitude"]
+            longitude = city["longitude"]
+            name = city["name"]
+            country = city["country"]
+            self.city_list.addItem(f"{name}, {country}")
+            # print(name, country, latitude, longitude)
