@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QApplication
 
-from MainWidget import MainWidget
+from main_widget import MainWidget
 
 
 def main():
@@ -10,6 +10,7 @@ def main():
     widget.show()
 
     return app.exec()
+
 
 if __name__ == '__main__':
     main()
