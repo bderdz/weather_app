@@ -37,22 +37,24 @@ class MainWidget(QWidget):
             QMessageBox.critical(self, "Error!!!", "No such city")
             return
         results = json['results']
+
+        self.city_list.clear()
         for city in results:
             latitude = city['latitude']
             longitude = city['longitude']
             name = city['name']
             country = city['country']
             item = QListWidgetItem(f"{name}, {country}")
-            item.setData(Qt.UserRole,(latitude, longitude))
+            item.setData(Qt.UserRole, (latitude, longitude))
             self.city_list.addItem(item)
 
     def get_weather(self):
-        latitude,longitude = self.city_list.currentItem().data(Qt.UserRole)
+        latitude, longitude = self.city_list.currentItem().data(Qt.UserRole)
         keys = ''
         for key, value in self.weather_params.items():
             if value is True:
                 keys += key + ','
-        url=f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current={keys}"
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current={keys}"
         response = requests.get(url)
         json = response.json()
         self.weather_label.setText(str(json['current']))
