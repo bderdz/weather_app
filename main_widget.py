@@ -1,3 +1,4 @@
+from PySide6.QtCore import QSettings
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QWidget, QLineEdit, QPushButton, QLabel, QGridLayout, QMessageBox, QListWidget, \
     QListWidgetItem
@@ -27,7 +28,7 @@ class MainWidget(QWidget):
         layout.addWidget(self.weather_label, 2, 0, 1, 2)
         layout.addWidget(settings_button, 3, 0, 1, 2)
 
-        self.weather_params = {"tempeature_2m": True}
+        # self.weather_params = {"temperature_2m": True}
 
     def get_cities(self):
         url = f"https://geocoding-api.open-meteo.com/v1/search?name={self.city_edit.text()}"
@@ -51,9 +52,13 @@ class MainWidget(QWidget):
     def get_weather(self):
         latitude, longitude = self.city_list.currentItem().data(Qt.UserRole)
         keys = ''
-        for key, value in self.weather_params.items():
-            if value is True:
-                keys += key + ','
+        settings = QSettings()
+        settings.beginGroup("parameters")
+
+        for key in settings.childKeys():
+            if settings.value(key):
+                keys += key + ","
+
         url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current={keys}"
         response = requests.get(url)
         json = response.json()
@@ -64,4 +69,7 @@ class MainWidget(QWidget):
 
         settings_dialog.exec()
         if settings_dialog.result() == 1:
-            self.weather_params = settings_dialog.result_data()
+            # self.weather_params = settings_dialog.result_data()
+            settings = QSettings()
+            for key, value in settings_dialog.result_data().items():
+                settings.setValue(f"parameters/{key}", value)
