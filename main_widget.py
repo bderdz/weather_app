@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QWidget, QLineEdit, QPushButton, QLabel, QGridLayo
     QListWidgetItem
 import requests
 
+from city_list_item import CityListItem
 from settings_dialog import SettingsDialog
 
 
@@ -16,21 +17,26 @@ class MainWidget(QWidget):
         self.weather_label = QLabel(self)
         self.city_list = QListWidget(self)
         settings_button = QPushButton("Settings", self)
+        self.favourite_city_list = QListWidget(self)
 
         get_cities_button.clicked.connect(self.get_cities)
         settings_button.clicked.connect(self.show_settings)
-        self.city_list.itemClicked.connect(self.get_weather)
+        # self.city_list.itemClicked.connect(self.get_weather)
+        self.city_list.itemDoubleClicked.connect(self.add_item_to_favourites)
 
         layout = QGridLayout(self)
         layout.addWidget(self.city_edit, 0, 0)
         layout.addWidget(get_cities_button, 0, 1)
-        layout.addWidget(self.city_list, 1, 0, 1, 2)
+        layout.addWidget(self.city_list, 1, 0, 1, 1)
         layout.addWidget(self.weather_label, 2, 0, 1, 2)
         layout.addWidget(settings_button, 3, 0, 1, 2)
+        layout.addWidget(self.favourite_city_list, 1, 1, 1, 1)
 
         # self.weather_params = {"temperature_2m": True}
 
     def get_cities(self):
+        self.city_list.clear()
+
         url = f"https://geocoding-api.open-meteo.com/v1/search?name={self.city_edit.text()}"
         response = requests.get(url)
         json = response.json()
@@ -38,27 +44,24 @@ class MainWidget(QWidget):
             QMessageBox.critical(self, "Error!!!", "No such city")
             return
         results = json['results']
-
-        self.city_list.clear()
         for city in results:
             latitude = city['latitude']
             longitude = city['longitude']
             name = city['name']
             country = city['country']
-            item = QListWidgetItem(f"{name}, {country}")
-            item.setData(Qt.UserRole, (latitude, longitude))
+            item = CityListItem(f"{name}, {country}", latitude, longitude)
             self.city_list.addItem(item)
 
     def get_weather(self):
-        latitude, longitude = self.city_list.currentItem().data(Qt.UserRole)
+        # print(self.city_list.currentItem().data(Qt.UserRole))
+        latitude = self.city_list.currentItem().latitude
+        longitude = self.city_list.currentItem().longitude
         keys = ''
         settings = QSettings()
-        settings.beginGroup("parameters")
-
+        settings.beginGroup('parameters')
         for key in settings.childKeys():
-            if settings.value(key):
-                keys += key + ","
-
+            if settings.value(key, type=bool) == True:
+                keys += key + ','
         url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current={keys}"
         response = requests.get(url)
         json = response.json()
@@ -72,4 +75,15 @@ class MainWidget(QWidget):
             # self.weather_params = settings_dialog.result_data()
             settings = QSettings()
             for key, value in settings_dialog.result_data().items():
-                settings.setValue(f"parameters/{key}", value)
+                settings.setValue(f'parameters/{key}', value)
+
+    def add_item_to_favourites(self):
+        checked_item = self.city_list.currentItem()
+        for row in range(self.favourite_city_list.count()):
+            if self.favourite_city_list.item(row) == checked_item:
+                QMessageBox.critical(self, "Info", "This city is already added")
+                return
+
+        taken_item = self.city_list.takeItem(self.city_list.currentRow())
+
+        self.favourite_city_list.addItem(taken_item)
